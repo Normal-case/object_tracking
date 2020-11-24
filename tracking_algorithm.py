@@ -44,7 +44,7 @@ dataset['labels'] = [{
     'object_id':0
 }]
 '''
-with open('./demo/drive6_final2.json', 'r') as f:
+with open('./demo/drive6_change.json', 'r') as f:
     data = json.load(f)
 
 # create annoation dictionary
@@ -75,9 +75,9 @@ class_label_names = ('background', # zero class
 
 
 '''
-version = 4
+version = 7
 modify
-- update point modify
+- change all Object_id
 '''
 
 path = './demo/image/' # image path
@@ -89,6 +89,7 @@ for i in range(1000):
     if i != 0:
         previous_image = '{:06d}.jpg'.format(i-1)
         if previous_image not in annotation:
+            tracker_list = []
             continue
     image = '{:06d}.jpg'.format(i)
     if image not in annotation:
@@ -109,6 +110,8 @@ for i in range(1000):
     row_list = []
     for row, column in indexes:
         value = G[row][column]
+        row = row + (i-1) * 100
+        column = column + i * 100
         if value < distance:
             row_list.append(row)
             
@@ -126,6 +129,8 @@ for i in range(1000):
      # create or update tracker       
     for row, column in indexes:
         value = G[row][column]
+        row = row + (i-1) * 100
+        column = column + i * 100
         # create tracker
         if value < distance:
             if row not in track_obj:
@@ -143,14 +148,14 @@ for i in range(1000):
     img = cv2.imread(path + image)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # color
-    num_classes = 20
+    num_classes = 5
     hsv_tuples = [(1.0 * x / num_classes, 1., 1.) for x in range(num_classes)]
     colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
     colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
     
     for tidx, tracker in enumerate(tracker_list):
         try:
-            a = annotation[image][tracker.object_id]
+            a = annotation[image][tracker.object_id-i*100]
         except Exception as e:
             print(previous_image, image)
             print(e)
@@ -161,10 +166,10 @@ for i in range(1000):
         tracker.point = [x1, y1, x2, y2] # update point
 
         # drawing bouding box
-        cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), colors[tracker.class_id % num_classes], 2)
-        cv2.rectangle(img, (int(x1), int(y1-30)), (int(x1+len(str(tracker.tracker_id))*17), int(y1)), colors[tracker.class_id % num_classes], -1)
+        cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), colors[tracker.tracker_id % num_classes], 2)
+        cv2.rectangle(img, (int(x1), int(y1-30)), (int(x1+len(str(tracker.tracker_id))*17), int(y1)), colors[tracker.tracker_id % num_classes], -1)
         cv2.putText(img, str(tracker.tracker_id),(int(x1), int(y1-10)),0, 0.75, (255,255,255),2)
-        cv2.putText(img, class_label_names[tracker.class_id] + '_' + str(tracker.tracker_id), (10, 20 + 25*tidx), 0, 0.6, colors[tracker.class_id % num_classes], 2)
+        cv2.putText(img, class_label_names[tracker.class_id] + '_' + str(tracker.tracker_id), (10, 20 + 30*tidx), 0, 0.8, colors[tracker.tracker_id % num_classes], 2)
     
     result = np.asarray(img)
     result = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
